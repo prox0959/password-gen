@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cryptographically Secure Password Generator</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 520px;
+            padding: 28px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            margin-bottom: 24px;
+        }
+
+        .password-display-box {
+            position: relative;
+            background: #090d16;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 65px 16px 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            word-break: break-all;
+        }
+
+        .password-text {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 1.25rem;
+            color: #38bdf8;
+            font-weight: 600;
+            letter-spacing: 1px;
+            user-select: all;
+        }
+
+        .copy-btn {
+            position: absolute;
+            right: 12px;
+            background: var(--border);
+            border: none;
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        .copy-btn:hover {
+            background: var(--accent);
+        }
+
+        .strength-meter {
+            margin-bottom: 24px;
+        }
+
+        .meter-bar-container {
+            height: 6px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .meter-bar {
+            height: 100%;
+            width: 0%;
+            transition: all 0.3s ease;
+            background: var(--danger);
+        }
+
+        .strength-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+        }
+
+        .strength-stats span strong {
+            color: var(--text-main);
+        }
+
+        .setting-group {
+            margin-bottom: 20px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .slider-val {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 4px;
+            background: var(--border);
+            outline: none;
+            -webkit-appearance: none;
+            accent-color: var(--accent);
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checkbox-label input {
+            accent-color: var(--accent);
+            width: 17px;
+            height: 17px;
+            cursor: pointer;
+        }
+
+        .generate-btn {
+            width: 100%;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .generate-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .copied-toast {
+            position: fixed;
+            bottom: 20px;
+            background: var(--success);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .copied-toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🛡️ Secure Password Generator</h1>
+        <p class="subtitle">Cryptographically secure (CSPRNG) & Brute-force resistant</p>
+
+        <div class="password-display-box">
+            <div class="password-text" id="passwordOutput">---</div>
+            <button class="copy-btn" id="copyBtn" title="Copy to clipboard">Copy</button>
+        </div>
+
+        <div class="strength-meter">
+            <div class="meter-bar-container">
+                <div class="meter-bar" id="meterBar"></div>
+            </div>
+            <div class="strength-stats">
+                <span id="entropyText">Entropy: <strong>0 bits</strong></span>
+                <span id="crackTimeText">Est. Crack Time: <strong>0 s</strong></span>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <div class="slider-header">
+                <span>Password Length</span>
+                <span class="slider-val" id="lengthVal">16</span>
+            </div>
+            <input type="range" id="lengthSlider" min="6" max="64" value="16">
+        </div>
+
+        <div class="options-grid">
+            <label class="checkbox-label">
+                <input type="checkbox" id="upperCheck" checked> Uppercase (A-Z)
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="lowerCheck" checked> Lowercase (a-z)
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="digitCheck" checked> Numbers (0-9)
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="symbolCheck" checked> Symbols (!@#$...)
+            </label>
+            <label class="checkbox-label" style="grid-column: span 2;">
+                <input type="checkbox" id="extendedCheck" checked> Extended / Turkish (ç, ğ, ı, ö, ş, ü, Ç, Ğ, İ, Ö, Ş, Ü)
+            </label>
+        </div>
+
+        <button class="generate-btn" id="genBtn">
+            <span>🎲 Generate New Password</span>
+        </button>
+    </div>
+
+    <div class="copied-toast" id="toast">📋 Copied to Clipboard!</div>
+
+    <script>
+        const UPPERCASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const LOWERCASE = "abcdefghijklmnopqrstuvwxyz";
+        const DIGITS = "0123456789";
+        const SYMBOLS = "!@#$%^&*()_+-=[]{}|;:,.<>?~";
+        const EXTENDED = "çğıöşüÇĞİÖŞÜ";
+
+        const lengthSlider = document.getElementById('lengthSlider');
+        const lengthVal = document.getElementById('lengthVal');
+        const upperCheck = document.getElementById('upperCheck');
+        const lowerCheck = document.getElementById('lowerCheck');
+        const digitCheck = document.getElementById('digitCheck');
+        const symbolCheck = document.getElementById('symbolCheck');
+        const extendedCheck = document.getElementById('extendedCheck');
+        const passwordOutput = document.getElementById('passwordOutput');
+        const meterBar = document.getElementById('meterBar');
+        const entropyText = document.getElementById('entropyText');
+        const crackTimeText = document.getElementById('crackTimeText');
+        const genBtn = document.getElementById('genBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const toast = document.getElementById('toast');
+
+        // CSPRNG Random Integer (Web Crypto API)
+        function getSecureRandomInt(max) {
+            const array = new Uint32Array(1);
+            window.crypto.getRandomValues(array);
+            return array[0] % max;
+        }
+
+        function generatePassword() {
+            const length = parseInt(lengthSlider.value);
+            let pool = "";
+            let guaranteed = [];
+
+            if (upperCheck.checked) {
+                pool += UPPERCASE;
+                guaranteed.push(UPPERCASE[getSecureRandomInt(UPPERCASE.length)]);
+            }
+            if (lowerCheck.checked) {
+                pool += LOWERCASE;
+                guaranteed.push(LOWERCASE[getSecureRandomInt(LOWERCASE.length)]);
+            }
+            if (digitCheck.checked) {
+                pool += DIGITS;
+                guaranteed.push(DIGITS[getSecureRandomInt(DIGITS.length)]);
+            }
+            if (symbolCheck.checked) {
+                pool += SYMBOLS;
+                guaranteed.push(SYMBOLS[getSecureRandomInt(SYMBOLS.length)]);
+            }
+            if (extendedCheck.checked) {
+                pool += EXTENDED;
+                guaranteed.push(EXTENDED[getSecureRandomInt(EXTENDED.length)]);
+            }
+
+            if (!pool) {
+                passwordOutput.textContent = "Please select at least 1 character set";
+                return;
+            }
+
+            let result = [...guaranteed];
+            for (let i = guaranteed.length; i < length; i++) {
+                result.push(pool[getSecureRandomInt(pool.length)]);
+            }
+
+            // Secure Fisher-Yates Shuffle
+            for (let i = result.length - 1; i > 0; i--) {
+                const j = getSecureRandomInt(i + 1);
+                [result[i], result[j]] = [result[j], result[i]];
+            }
+
+            const finalPassword = result.join('');
+            passwordOutput.textContent = finalPassword;
+            updateAnalysis(finalPassword, pool.length);
+        }
+
+        function updateAnalysis(password, charsetSize) {
+            const length = password.length;
+            const entropy = length * Math.log2(charsetSize);
+            
+            // 100 Billion guesses / second (modern GPU brute force capacity)
+            const guessesPerSec = 1e11;
+            const totalCombos = Math.pow(charsetSize, length);
+            const seconds = (totalCombos / 2) / guessesPerSec;
+
+            entropyText.innerHTML = `Entropy: <strong>${entropy.toFixed(1)} bits</strong>`;
+            crackTimeText.innerHTML = `Est. Crack Time: <strong>${formatTime(seconds)}</strong>`;
+
+            // Strength bar
+            let percent = Math.min(100, (entropy / 100) * 100);
+            meterBar.style.width = percent + '%';
+
+            if (entropy < 40) {
+                meterBar.style.background = 'var(--danger)';
+            } else if (entropy < 70) {
+                meterBar.style.background = 'var(--warning)';
+            } else {
+                meterBar.style.background = 'var(--success)';
+            }
+        }
+
+        function formatTime(seconds) {
+            if (seconds < 0.001) return "< 1 ms";
+            if (seconds < 1) return `${(seconds*1000).toFixed(0)} ms`;
+            if (seconds < 60) return `${seconds.toFixed(1)} s`;
+            if (seconds < 3600) return `${(seconds/60).toFixed(1)} min`;
+            if (seconds < 86400) return `${(seconds/3600).toFixed(1)} hours`;
+            if (seconds < 31536000) return `${(seconds/86400).toFixed(0)} days`;
+            if (seconds < 31536000 * 100) return `${(seconds/31536000).toFixed(1)} years`;
+            if (seconds < 31536000 * 1e6) return `${(seconds/31536000).toExponential(1)} years`;
+            return "Longer than age of Universe!";
+        }
+
+        lengthSlider.addEventListener('input', () => {
+            lengthVal.textContent = lengthSlider.value;
+            generatePassword();
+        });
+
+        [upperCheck, lowerCheck, digitCheck, symbolCheck, extendedCheck].forEach(el => {
+            el.addEventListener('change', generatePassword);
+        });
+
+        genBtn.addEventListener('click', generatePassword);
+
+        copyBtn.addEventListener('click', () => {
+            const pwd = passwordOutput.textContent;
+            if (pwd && pwd !== "---") {
+                navigator.clipboard.writeText(pwd).then(() => {
+                    toast.classList.add('show');
+                    setTimeout(() => toast.classList.remove('show'), 2000);
+                });
+            }
+        });
+
+        // Initial generation
+        generatePassword();
+    </script>
+</body>
+</html>
